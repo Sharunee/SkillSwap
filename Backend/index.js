@@ -15,3 +15,5 @@ mongoose
 app.get("/", (req, res) => res.send("SkillSwap API running 🚀"));
 
 app.listen(5000, () => console.log("🚀 Server running on port 5000"));
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
