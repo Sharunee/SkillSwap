@@ -15,6 +15,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    bio: {
+      type: String,
+      default: "",
+    },
+    location: {
+      type: String,
+      default: "",
+    },
     skillsOffered: [String],
     skillsWanted: [String],
   },
