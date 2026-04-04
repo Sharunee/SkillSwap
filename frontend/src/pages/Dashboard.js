@@ -19,6 +19,7 @@ function Dashboard() {
   const [name, setName] = useState("");
   const [skillsOffered, setSkillsOffered] = useState([]);
   const [skillsWanted, setSkillsWanted] = useState([]);
+  const [chatUser, setChatUser] = useState(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
@@ -44,6 +45,11 @@ function Dashboard() {
     } catch (e) {
       console.log(e);
     }
+  };
+
+  const handleStartChat = (user) => {
+    setChatUser(user);
+    setActive("Chat");
   };
 
   const greeting = () => {
@@ -286,7 +292,6 @@ function Dashboard() {
         {/* ── DASHBOARD HOME ── */}
         {active === "Dashboard" && (
           <>
-            {/* Banner */}
             <div
               style={{
                 background: "linear-gradient(135deg, #7C3AED, #EC4899)",
@@ -343,7 +348,6 @@ function Dashboard() {
               </span>
             </div>
 
-            {/* Stats */}
             <div
               style={{
                 display: "grid",
@@ -419,7 +423,6 @@ function Dashboard() {
               ))}
             </div>
 
-            {/* Skills preview */}
             <div
               style={{
                 display: "grid",
@@ -558,8 +561,8 @@ function Dashboard() {
 
         {/* ── OTHER PAGES ── */}
         {active === "Profile" && <Profile />}
-        {active === "Matches" && <Matches />}
-        {active === "Chat" && <Chat />}
+        {active === "Matches" && <Matches onStartChat={handleStartChat} />}
+        {active === "Chat" && <Chat initialUser={chatUser} />}
         {active === "Sessions" && <Sessions />}
       </main>
     </div>

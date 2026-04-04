@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-function Matches() {
+function Matches({ onStartChat }) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -272,6 +272,7 @@ function Matches() {
 
             {/* Chat Button */}
             <button
+              onClick={() => onStartChat && onStartChat(match.user)}
               style={{
                 width: "100%",
                 padding: "12px",
