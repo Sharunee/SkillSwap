@@ -33,6 +33,12 @@ const sessionSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "rejected"],
       default: "pending",
     },
+
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "rejected", "completed"],
+      default: "pending",
+    },
   },
   { timestamps: true },
 );

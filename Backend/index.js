@@ -11,6 +11,7 @@ const matchRoutes = require("./routes/match");
 const chatRoutes = require("./routes/chat");
 const Message = require("./models/Message");
 const sessionRoutes = require("./routes/session");
+const trustRoutes = require("./routes/trust");
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +36,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/trust", trustRoutes);
 
 // Socket.io
 io.on("connection", (socket) => {
