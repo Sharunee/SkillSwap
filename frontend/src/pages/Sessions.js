@@ -2,36 +2,40 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const C = {
-  blue:         "#BDE8FF",
-  lavender:     "#D8C9FF",
-  pink:         "#FFB3CC",
-  yellow:       "#FFFAB3",
-  lavenderDark: "#7C5CBF",
-  pinkDark:     "#D45580",
-  blueDark:     "#4BA8D4",
-  yellowDark:   "#B8A800",
-  text:         "#2D2040",
-  muted:        "#8B7DAA",
-  border:       "#E8DFFF",
-  bg:           "#F6F3FF",
-  white:        "#FFFFFF",
+  primary: "#809bce",
+  secondary: "#95b8d1",
+  accent: "#b8e0d2",
+  light: "#d6eadf",
+  soft: "#eac4d5",
+  dark: "#2e3a5c",
+  bg: "#f0f6f9",
+  white: "#ffffff",
 };
 
 function Sessions() {
-  const [sessions, setSessions]       = useState([]);
-  const [matches, setMatches]         = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [sessions, setSessions] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showBookForm, setShowBookForm] = useState(false);
-  const [form, setForm]               = useState({ receiverId: "", skill: "", date: "", time: "", message: "" });
-  const [booking, setBooking]         = useState(false);
-  const [toast, setToast]             = useState({ show: false, msg: "", type: "" });
-  const [activeTab, setActiveTab]     = useState("all");
+  const [form, setForm] = useState({
+    receiverId: "",
+    skill: "",
+    date: "",
+    time: "",
+    message: "",
+  });
+  const [booking, setBooking] = useState(false);
+  const [toast, setToast] = useState({ show: false, msg: "", type: "" });
+  const [activeTab, setActiveTab] = useState("all");
 
-  const token         = localStorage.getItem("token");
-  const currentUser   = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token");
+  const currentUser = JSON.parse(localStorage.getItem("user"));
   const currentUserId = currentUser?._id || currentUser?.id;
 
-  useEffect(() => { loadSessions(); loadMatches(); }, []);
+  useEffect(() => {
+    loadSessions();
+    loadMatches();
+  }, []);
 
   const loadSessions = async () => {
     try {
@@ -39,7 +43,9 @@ function Sessions() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSessions(res.data);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log(e);
+    }
     setLoading(false);
   };
 
@@ -49,7 +55,9 @@ function Sessions() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMatches(res.data);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const showToast = (msg, type = "success") => {
@@ -59,7 +67,8 @@ function Sessions() {
 
   const bookSession = async () => {
     if (!form.receiverId || !form.skill || !form.date || !form.time) {
-      showToast("❌ Please fill all required fields!", "error"); return;
+      showToast("❌ Please fill all required fields!", "error");
+      return;
     }
     setBooking(true);
     try {
@@ -70,83 +79,162 @@ function Sessions() {
       setShowBookForm(false);
       setForm({ receiverId: "", skill: "", date: "", time: "", message: "" });
       loadSessions();
-    } catch (e) { showToast("❌ Booking failed. Try again.", "error"); }
+    } catch (e) {
+      showToast("❌ Booking failed. Try again.", "error");
+    }
     setBooking(false);
   };
 
   const updateStatus = async (sessionId, status) => {
     try {
-      await axios.put(`http://localhost:5000/api/sessions/${sessionId}`, { status }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.put(
+        `http://localhost:5000/api/sessions/${sessionId}`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
       showToast(`✅ Session ${status}!`, "success");
       loadSessions();
-    } catch (e) { showToast("❌ Failed to update session", "error"); }
+    } catch (e) {
+      showToast("❌ Failed to update session", "error");
+    }
   };
 
   const getStatusStyle = (status) => {
-    if (status === "accepted") return { bg: `${C.blue}99`,  color: C.blueDark,     border: C.blue,     label: "✅ Accepted" };
-    if (status === "rejected") return { bg: `${C.pink}99`,  color: C.pinkDark,     border: C.pink,     label: "❌ Rejected" };
-    return                            { bg: `${C.yellow}99`, color: C.yellowDark,  border: C.yellow,   label: "⏳ Pending"  };
+    if (status === "accepted")
+      return {
+        bg: C.light,
+        color: "#2a6b3a",
+        border: C.accent,
+        label: "✅ Accepted",
+      };
+    if (status === "rejected")
+      return {
+        bg: "#fde8e8",
+        color: "#b91c1c",
+        border: "#fca5a5",
+        label: "❌ Rejected",
+      };
+    return {
+      bg: C.soft,
+      color: C.dark,
+      border: C.secondary,
+      label: "⏳ Pending",
+    };
   };
 
   const filteredSessions = sessions.filter((s) => {
-    if (activeTab === "sent")     return String(s.requester?._id) === String(currentUserId);
-    if (activeTab === "received") return String(s.receiver?._id)  === String(currentUserId);
+    if (activeTab === "sent")
+      return String(s.requester?._id) === String(currentUserId);
+    if (activeTab === "received")
+      return String(s.receiver?._id) === String(currentUserId);
     return true;
   });
 
   const cardStyle = {
-    background: C.white, borderRadius: "20px", padding: "24px",
-    border: `2px solid ${C.border}`,
-    boxShadow: `0 4px 20px rgba(124,92,191,0.08)`,
+    background: C.white,
+    borderRadius: "20px",
+    padding: "24px",
+    border: `2px solid ${C.light}`,
+    boxShadow: "0 4px 20px rgba(128,155,206,0.10)",
   };
 
   const inputStyle = {
-    width: "100%", padding: "11px 14px",
-    border: `2px solid ${C.border}`, borderRadius: "12px",
-    fontSize: "13px", outline: "none",
-    background: `${C.lavender}22`, color: C.text,
-    fontFamily: "Poppins, sans-serif", boxSizing: "border-box", marginBottom: "14px",
+    width: "100%",
+    padding: "11px 14px",
+    border: `2px solid ${C.light}`,
+    borderRadius: "12px",
+    fontSize: "13px",
+    outline: "none",
+    background: C.bg,
+    color: C.dark,
+    fontFamily: "Poppins, sans-serif",
+    boxSizing: "border-box",
+    marginBottom: "14px",
   };
 
   const labelStyle = {
-    fontSize: "11px", fontWeight: "600", color: C.muted,
-    textTransform: "uppercase", letterSpacing: "0.5px",
-    display: "block", marginBottom: "5px",
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    display: "block",
+    marginBottom: "5px",
   };
 
   return (
     <div style={{ fontFamily: "Poppins, sans-serif" }}>
-
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "24px",
+        }}
+      >
         <div>
-          <h2 style={{ fontSize: "18px", fontWeight: "700", color: C.text }}>📅 My Sessions</h2>
-          <p style={{ fontSize: "13px", color: C.muted, marginTop: "3px" }}>Manage your skill swap sessions</p>
+          <h2 style={{ fontSize: "18px", fontWeight: "700", color: C.dark }}>
+            📅 My Sessions
+          </h2>
+          <p style={{ fontSize: "13px", color: "#9CA3AF", marginTop: "3px" }}>
+            Manage your skill swap sessions
+          </p>
         </div>
-        <button onClick={() => setShowBookForm(!showBookForm)} style={{
-          padding: "12px 22px",
-          background: `linear-gradient(135deg, ${C.lavender}, ${C.pink})`,
-          color: C.lavenderDark, border: "none", borderRadius: "12px",
-          fontWeight: "700", fontSize: "14px", cursor: "pointer",
-          fontFamily: "Poppins, sans-serif",
-          boxShadow: `0 4px 12px ${C.pink}66`,
-        }}>+ Book Session</button>
+        <button
+          onClick={() => setShowBookForm(!showBookForm)}
+          style={{
+            padding: "12px 22px",
+            background: C.primary,
+            color: C.white,
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            fontFamily: "Poppins, sans-serif",
+          }}
+        >
+          + Book Session
+        </button>
       </div>
 
       {/* Book Form */}
       {showBookForm && (
-        <div style={{ ...cardStyle, marginBottom: "24px", background: `${C.lavender}22`, border: `2px solid ${C.lavender}` }}>
-          <h3 style={{ fontSize: "15px", fontWeight: "700", color: C.text, marginBottom: "20px" }}>
+        <div
+          style={{
+            ...cardStyle,
+            marginBottom: "24px",
+            background: C.bg,
+            border: `2px solid ${C.secondary}`,
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "15px",
+              fontWeight: "700",
+              color: C.dark,
+              marginBottom: "20px",
+            }}
+          >
             📅 Book a New Session
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "16px",
+            }}
+          >
             <div>
               <label style={labelStyle}>Select Person *</label>
-              <select value={form.receiverId}
-                onChange={(e) => setForm({ ...form, receiverId: e.target.value })}
-                style={{ ...inputStyle }}>
+              <select
+                value={form.receiverId}
+                onChange={(e) =>
+                  setForm({ ...form, receiverId: e.target.value })
+                }
+                style={{ ...inputStyle }}
+              >
                 <option value="">-- Choose a match --</option>
                 {matches.map((m, i) => (
                   <option key={i} value={m.user._id}>
@@ -157,40 +245,79 @@ function Sessions() {
             </div>
             <div>
               <label style={labelStyle}>Skill to Learn *</label>
-              <input style={inputStyle} type="text" placeholder="e.g. React, Guitar, Python..."
-                value={form.skill} onChange={(e) => setForm({ ...form, skill: e.target.value })} />
+              <input
+                style={inputStyle}
+                type="text"
+                placeholder="e.g. React, Guitar, Python..."
+                value={form.skill}
+                onChange={(e) => setForm({ ...form, skill: e.target.value })}
+              />
             </div>
             <div>
               <label style={labelStyle}>Date *</label>
-              <input style={inputStyle} type="date" value={form.date}
+              <input
+                style={inputStyle}
+                type="date"
+                value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                min={new Date().toISOString().split("T")[0]} />
+                min={new Date().toISOString().split("T")[0]}
+              />
             </div>
             <div>
               <label style={labelStyle}>Time *</label>
-              <input style={inputStyle} type="time" value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })} />
+              <input
+                style={inputStyle}
+                type="time"
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+              />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Message (optional)</label>
-              <input style={inputStyle} type="text" placeholder="Add a note for the session..."
-                value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+              <input
+                style={inputStyle}
+                type="text"
+                placeholder="Add a note for the session..."
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+              />
             </div>
           </div>
           <div style={{ display: "flex", gap: "12px", marginTop: "4px" }}>
-            <button onClick={bookSession} disabled={booking} style={{
-              flex: 1, padding: "13px",
-              background: `linear-gradient(135deg, ${C.lavender}, ${C.pink})`,
-              color: C.lavenderDark, border: "none", borderRadius: "12px",
-              fontWeight: "700", fontSize: "14px", cursor: "pointer",
-              fontFamily: "Poppins, sans-serif",
-            }}>{booking ? "Booking..." : "📅 Confirm Booking"}</button>
-            <button onClick={() => setShowBookForm(false)} style={{
-              padding: "13px 24px", background: C.white, color: C.muted,
-              border: `2px solid ${C.border}`, borderRadius: "12px",
-              fontWeight: "600", fontSize: "14px", cursor: "pointer",
-              fontFamily: "Poppins, sans-serif",
-            }}>Cancel</button>
+            <button
+              onClick={bookSession}
+              disabled={booking}
+              style={{
+                flex: 1,
+                padding: "13px",
+                background: C.primary,
+                color: C.white,
+                border: "none",
+                borderRadius: "12px",
+                fontWeight: "700",
+                fontSize: "14px",
+                cursor: "pointer",
+                fontFamily: "Poppins, sans-serif",
+              }}
+            >
+              {booking ? "Booking..." : "📅 Confirm Booking"}
+            </button>
+            <button
+              onClick={() => setShowBookForm(false)}
+              style={{
+                padding: "13px 24px",
+                background: C.white,
+                color: "#9CA3AF",
+                border: `2px solid ${C.light}`,
+                borderRadius: "12px",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: "pointer",
+                fontFamily: "Poppins, sans-serif",
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
@@ -198,102 +325,215 @@ function Sessions() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
         {[
-          { key: "all",      label: "📋 All Sessions" },
-          { key: "sent",     label: "📤 Sent" },
+          { key: "all", label: "📋 All Sessions" },
+          { key: "sent", label: "📤 Sent" },
           { key: "received", label: "📥 Received" },
         ].map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
-            padding: "8px 18px", borderRadius: "10px",
-            border: activeTab === tab.key ? `2px solid ${C.lavenderDark}` : `2px solid ${C.border}`,
-            background: activeTab === tab.key ? C.lavender : C.white,
-            color: activeTab === tab.key ? C.lavenderDark : C.muted,
-            fontWeight: "600", fontSize: "13px", cursor: "pointer",
-            fontFamily: "Poppins, sans-serif", transition: "all 0.2s",
-          }}>{tab.label}</button>
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "10px",
+              border:
+                activeTab === tab.key
+                  ? `2px solid ${C.primary}`
+                  : `2px solid ${C.light}`,
+              background: activeTab === tab.key ? C.accent : C.white,
+              color: activeTab === tab.key ? C.dark : "#9CA3AF",
+              fontWeight: "600",
+              fontSize: "13px",
+              cursor: "pointer",
+              fontFamily: "Poppins, sans-serif",
+              transition: "all 0.2s",
+            }}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
 
       {/* Sessions List */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px", color: C.muted }}>
+        <div style={{ textAlign: "center", padding: "60px", color: "#9CA3AF" }}>
           <div style={{ fontSize: "40px", marginBottom: "12px" }}>⏳</div>
           Loading sessions...
         </div>
       ) : filteredSessions.length === 0 ? (
-        <div style={{ ...cardStyle, textAlign: "center", padding: "60px 40px" }}>
+        <div
+          style={{ ...cardStyle, textAlign: "center", padding: "60px 40px" }}
+        >
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📅</div>
-          <h3 style={{ fontSize: "18px", fontWeight: "700", color: C.lavenderDark, marginBottom: "8px" }}>
+          <h3
+            style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              color: C.primary,
+              marginBottom: "8px",
+            }}
+          >
             No Sessions Yet!
           </h3>
-          <p style={{ color: C.muted, fontSize: "14px" }}>
+          <p style={{ color: "#9CA3AF", fontSize: "14px" }}>
             Click "Book Session" to schedule your first skill swap!
           </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {filteredSessions.map((session, i) => {
-            const isRequester = String(session.requester?._id) === String(currentUserId);
-            const otherUser   = isRequester ? session.receiver : session.requester;
+            const isRequester =
+              String(session.requester?._id) === String(currentUserId);
+            const otherUser = isRequester
+              ? session.receiver
+              : session.requester;
             const statusStyle = getStatusStyle(session.status);
-
             return (
-              <div key={i} style={{ ...cardStyle, display: "flex", alignItems: "center", gap: "20px" }}>
-                <div style={{
-                  width: "52px", height: "52px", borderRadius: "50%",
-                  background: `linear-gradient(135deg, ${C.lavender}, ${C.pink})`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: C.lavenderDark, fontWeight: "800", fontSize: "20px", flexShrink: 0,
-                }}>
+              <div
+                key={i}
+                style={{
+                  ...cardStyle,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "20px",
+                }}
+              >
+                {/* Avatar */}
+                <div
+                  style={{
+                    width: "52px",
+                    height: "52px",
+                    borderRadius: "50%",
+                    background: C.primary,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: C.white,
+                    fontWeight: "800",
+                    fontSize: "20px",
+                    flexShrink: 0,
+                  }}
+                >
                   {otherUser?.name?.charAt(0)?.toUpperCase()}
                 </div>
 
+                {/* Info */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                    <h3 style={{ fontSize: "15px", fontWeight: "700", color: C.text }}>{otherUser?.name}</h3>
-                    <span style={{
-                      background: C.blue, color: C.blueDark,
-                      fontSize: "11px", fontWeight: "600",
-                      padding: "2px 8px", borderRadius: "8px",
-                      border: `1px solid ${C.blueDark}33`,
-                    }}>{isRequester ? "📤 Sent" : "📥 Received"}</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <h3
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: "700",
+                        color: C.dark,
+                      }}
+                    >
+                      {otherUser?.name}
+                    </h3>
+                    <span
+                      style={{
+                        background: C.accent,
+                        color: C.dark,
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        padding: "2px 8px",
+                        borderRadius: "8px",
+                        border: `1px solid ${C.secondary}`,
+                      }}
+                    >
+                      {isRequester ? "📤 Sent" : "📥 Received"}
+                    </span>
                   </div>
-                  <p style={{ fontSize: "13px", color: "#6B7280", marginBottom: "4px" }}>
-                    🎯 Skill: <strong style={{ color: C.lavenderDark }}>{session.skill}</strong>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "#6B7280",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    🎯 Skill:{" "}
+                    <strong style={{ color: C.primary }}>
+                      {session.skill}
+                    </strong>
                   </p>
                   <p style={{ fontSize: "13px", color: "#6B7280" }}>
                     📅 {session.date} at ⏰ {session.time}
                   </p>
                   {session.message && (
-                    <p style={{ fontSize: "12px", color: C.muted, marginTop: "4px", fontStyle: "italic" }}>
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        color: "#9CA3AF",
+                        marginTop: "4px",
+                        fontStyle: "italic",
+                      }}
+                    >
                       "{session.message}"
                     </p>
                   )}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "10px" }}>
-                  <span style={{
-                    background: statusStyle.bg, color: statusStyle.color,
-                    border: `1px solid ${statusStyle.border}`,
-                    borderRadius: "10px", padding: "5px 14px",
-                    fontSize: "12px", fontWeight: "600",
-                  }}>{statusStyle.label}</span>
-
+                {/* Status & Actions */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: "10px",
+                  }}
+                >
+                  <span
+                    style={{
+                      background: statusStyle.bg,
+                      color: statusStyle.color,
+                      border: `1px solid ${statusStyle.border}`,
+                      borderRadius: "10px",
+                      padding: "5px 14px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {statusStyle.label}
+                  </span>
                   {!isRequester && session.status === "pending" && (
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button onClick={() => updateStatus(session._id, "accepted")} style={{
-                        padding: "7px 16px",
-                        background: `${C.blue}99`, color: C.blueDark,
-                        border: `1px solid ${C.blue}`, borderRadius: "10px",
-                        fontWeight: "600", fontSize: "12px", cursor: "pointer",
-                        fontFamily: "Poppins, sans-serif",
-                      }}>✅ Accept</button>
-                      <button onClick={() => updateStatus(session._id, "rejected")} style={{
-                        padding: "7px 16px",
-                        background: `${C.pink}99`, color: C.pinkDark,
-                        border: `1px solid ${C.pink}`, borderRadius: "10px",
-                        fontWeight: "600", fontSize: "12px", cursor: "pointer",
-                        fontFamily: "Poppins, sans-serif",
-                      }}>❌ Reject</button>
+                      <button
+                        onClick={() => updateStatus(session._id, "accepted")}
+                        style={{
+                          padding: "7px 16px",
+                          background: C.light,
+                          color: "#2a6b3a",
+                          border: `1px solid ${C.accent}`,
+                          borderRadius: "10px",
+                          fontWeight: "600",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontFamily: "Poppins, sans-serif",
+                        }}
+                      >
+                        ✅ Accept
+                      </button>
+                      <button
+                        onClick={() => updateStatus(session._id, "rejected")}
+                        style={{
+                          padding: "7px 16px",
+                          background: "#fde8e8",
+                          color: "#b91c1c",
+                          border: "1px solid #fca5a5",
+                          borderRadius: "10px",
+                          fontWeight: "600",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontFamily: "Poppins, sans-serif",
+                        }}
+                      >
+                        ❌ Reject
+                      </button>
                     </div>
                   )}
                 </div>
@@ -304,22 +544,27 @@ function Sessions() {
       )}
 
       {/* Toast */}
-      <div style={{
-        position: "fixed", bottom: "28px", left: "50%",
-        transform: `translateX(-50%) translateY(${toast.show ? "0" : "80px"})`,
-        background: toast.type === "success"
-          ? `linear-gradient(135deg, ${C.blue}, ${C.lavender})`
-          : `linear-gradient(135deg, ${C.pink}, #FF6B6B)`,
-        color: toast.type === "success" ? C.blueDark : C.pinkDark,
-        padding: "13px 28px", borderRadius: "13px",
-        fontSize: "14px", fontWeight: "700",
-        fontFamily: "Poppins, sans-serif",
-        transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-        zIndex: 999,
-        boxShadow: `0 8px 30px ${C.lavender}99`,
-        whiteSpace: "nowrap",
-        border: `1.5px solid rgba(255,255,255,0.5)`,
-      }}>{toast.msg}</div>
+      <div
+        style={{
+          position: "fixed",
+          bottom: "28px",
+          left: "50%",
+          transform: `translateX(-50%) translateY(${toast.show ? "0" : "80px"})`,
+          background: toast.type === "success" ? C.accent : "#fca5a5",
+          color: C.dark,
+          padding: "13px 28px",
+          borderRadius: "13px",
+          fontSize: "14px",
+          fontWeight: "600",
+          fontFamily: "Poppins, sans-serif",
+          transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+          zIndex: 999,
+          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {toast.msg}
+      </div>
     </div>
   );
 }

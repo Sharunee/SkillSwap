@@ -2,148 +2,272 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const C = {
-  blue:         "#BDE8FF",
-  lavender:     "#D8C9FF",
-  pink:         "#FFB3CC",
-  yellow:       "#FFFAB3",
-  lavenderDark: "#7C5CBF",
-  pinkDark:     "#D45580",
-  blueDark:     "#4BA8D4",
-  text:         "#2D2040",
-  muted:        "#8B7DAA",
-  border:       "#E8DFFF",
-  bg:           "#F6F3FF",
-  white:        "#FFFFFF",
+  primary: "#809bce",
+  secondary: "#95b8d1",
+  accent: "#b8e0d2",
+  light: "#d6eadf",
+  soft: "#eac4d5",
+  dark: "#2e3a5c",
+  bg: "#f0f6f9",
+  white: "#ffffff",
 };
 
 function Login() {
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage]   = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [message, setMessage] = useState("");
+  const [msgType, setMsgType] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", { email, password });
-      if (res && res.data) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        setMessage("Login successful! Redirecting...");
-        setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
-      }
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setMessage("✅ Login successful! Redirecting...");
+      setMsgType("success");
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Something went wrong. Try again.");
+      const data = err.response?.data;
+      // Unverified — redirect to OTP page
+      if (data?.notVerified) {
+        localStorage.setItem("otpEmail", data.email || email);
+        setMessage("⚠️ Email not verified. Redirecting to verify...");
+        setMsgType("warn");
+        setTimeout(() => {
+          window.location.href = "/verify-otp";
+        }, 1500);
+      } else {
+        setMessage(data?.message || "Something went wrong. Try again.");
+        setMsgType("error");
+      }
     }
     setLoading(false);
   };
 
   const inputStyle = {
-    display: "block", width: "100%", padding: "12px 14px",
-    margin: "6px 0 16px",
-    border: `2px solid ${C.border}`, borderRadius: "12px",
-    fontSize: "14px", outline: "none", boxSizing: "border-box",
-    background: `${C.lavender}33`, color: C.text,
+    width: "100%",
+    padding: "12px 14px",
+    border: `2px solid ${C.light}`,
+    borderRadius: "12px",
+    fontSize: "14px",
+    outline: "none",
+    boxSizing: "border-box",
+    background: C.bg,
+    color: C.dark,
     fontFamily: "Poppins, sans-serif",
-    transition: "border-color 0.2s",
   };
 
   const labelStyle = {
-    fontSize: "12px", fontWeight: "600", color: C.muted,
-    textTransform: "uppercase", letterSpacing: "0.5px",
+    display: "block",
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    marginBottom: "6px",
+  };
+
+  const msgColors = {
+    success: { bg: C.light, border: C.accent, text: "#2a6b3a" },
+    warn: { bg: "#fff8e1", border: "#ffd54f", text: "#7a5c00" },
+    error: { bg: "#fde8e8", border: "#fca5a5", text: "#b91c1c" },
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: `linear-gradient(135deg, ${C.blue}66 0%, ${C.lavender}66 40%, ${C.pink}44 100%)`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "Poppins, sans-serif",
-      position: "relative", overflow: "hidden",
-    }}>
-      {/* Decorative blobs */}
-      <div style={{
-        position: "fixed", top: "-80px", right: "-80px",
-        width: "320px", height: "320px", borderRadius: "50%",
-        background: C.pink, opacity: 0.3, filter: "blur(60px)", pointerEvents: "none",
-      }} />
-      <div style={{
-        position: "fixed", bottom: "-80px", left: "-80px",
-        width: "280px", height: "280px", borderRadius: "50%",
-        background: C.blue, opacity: 0.35, filter: "blur(60px)", pointerEvents: "none",
-      }} />
-      <div style={{
-        position: "fixed", top: "40%", left: "10%",
-        width: "160px", height: "160px", borderRadius: "50%",
-        background: C.yellow, opacity: 0.25, filter: "blur(40px)", pointerEvents: "none",
-      }} />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: C.bg,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        fontFamily: "Poppins, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          position: "fixed",
+          top: "-80px",
+          right: "-80px",
+          width: "300px",
+          height: "300px",
+          borderRadius: "50%",
+          background: C.primary,
+          opacity: 0.12,
+          filter: "blur(60px)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          bottom: "-60px",
+          left: "-60px",
+          width: "260px",
+          height: "260px",
+          borderRadius: "50%",
+          background: C.soft,
+          opacity: 0.18,
+          filter: "blur(60px)",
+          pointerEvents: "none",
+        }}
+      />
 
-      <div style={{
-        background: "rgba(255,255,255,0.85)", backdropFilter: "blur(16px)",
-        borderRadius: "24px", padding: "40px",
-        width: "100%", maxWidth: "400px",
-        boxShadow: `0 8px 40px ${C.lavender}88`,
-        border: `1.5px solid ${C.border}`,
-        position: "relative", zIndex: 1,
-      }}>
-        <h2 style={{
-          textAlign: "center", color: C.lavenderDark,
-          fontSize: "22px", fontWeight: "800", marginBottom: "6px",
-        }}>SkillSwap 🔁</h2>
-        <h3 style={{
-          textAlign: "center", color: C.text,
-          fontSize: "18px", fontWeight: "700", marginBottom: "4px",
-        }}>Welcome Back 👋</h3>
-        <p style={{
-          textAlign: "center", color: C.muted,
-          fontSize: "13px", marginBottom: "28px",
-        }}>Login to continue swapping skills</p>
+      <div
+        style={{
+          background: C.white,
+          borderRadius: "24px",
+          padding: "40px",
+          width: "100%",
+          maxWidth: "420px",
+          position: "relative",
+          zIndex: 1,
+          boxShadow: "0 8px 32px rgba(128,155,206,0.18)",
+          border: `1px solid ${C.light}`,
+        }}
+      >
+        <p
+          style={{
+            textAlign: "center",
+            fontSize: "20px",
+            fontWeight: "800",
+            color: C.primary,
+            marginBottom: "4px",
+          }}
+        >
+          SkillSwap 🔁
+        </p>
+        <h2
+          style={{
+            textAlign: "center",
+            color: C.dark,
+            fontSize: "20px",
+            fontWeight: "700",
+            marginBottom: "4px",
+          }}
+        >
+          Welcome Back 👋
+        </h2>
+        <p
+          style={{
+            textAlign: "center",
+            color: "#9CA3AF",
+            fontSize: "13px",
+            marginBottom: "28px",
+          }}
+        >
+          Login to continue swapping skills
+        </p>
 
         <form onSubmit={handleSubmit}>
-          <label style={labelStyle}>Email</label>
-          <input
-            type="email" value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com" required
-            style={inputStyle}
-          />
+          <div style={{ marginBottom: "16px" }}>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              style={inputStyle}
+            />
+          </div>
 
-          <label style={labelStyle}>Password</label>
-          <input
-            type="password" value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password" required
-            style={{ ...inputStyle, marginBottom: "20px" }}
-          />
+          <div style={{ marginBottom: "24px" }}>
+            <label style={labelStyle}>Password</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPass ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                style={{ ...inputStyle, paddingRight: "44px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  color: "#9CA3AF",
+                }}
+              >
+                {showPass ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
 
-          <button type="submit" disabled={loading} style={{
-            width: "100%", padding: "14px",
-            background: `linear-gradient(135deg, ${C.lavender}, ${C.pink})`,
-            color: C.lavenderDark, border: "none", borderRadius: "12px",
-            fontSize: "15px", fontWeight: "700", cursor: "pointer",
-            fontFamily: "Poppins, sans-serif",
-            boxShadow: `0 4px 16px ${C.pink}66`,
-            transition: "opacity 0.2s",
-            opacity: loading ? 0.7 : 1,
-          }}>{loading ? "Logging in..." : "Login →"}</button>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: loading ? C.secondary : C.primary,
+              color: C.white,
+              border: "none",
+              borderRadius: "12px",
+              fontSize: "15px",
+              fontWeight: "700",
+              cursor: loading ? "not-allowed" : "pointer",
+              fontFamily: "Poppins, sans-serif",
+              boxShadow: "0 4px 14px rgba(128,155,206,0.35)",
+            }}
+          >
+            {loading ? "Logging in..." : "Login →"}
+          </button>
         </form>
 
         {message && (
-          <p style={{
-            marginTop: "14px", textAlign: "center", fontSize: "13px",
-            color: message.includes("successful") ? "#2D8A5A" : "#C0365A",
-            fontWeight: "500",
-          }}>{message}</p>
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px 16px",
+              background: msgColors[msgType]?.bg || C.light,
+              border: `1px solid ${msgColors[msgType]?.border || C.accent}`,
+              borderRadius: "10px",
+              textAlign: "center",
+              fontSize: "13px",
+              fontWeight: "500",
+              color: msgColors[msgType]?.text || C.dark,
+            }}
+          >
+            {message}
+          </div>
         )}
 
-        <p style={{ textAlign: "center", marginTop: "20px", fontSize: "13px", color: C.muted }}>
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "20px",
+            fontSize: "13px",
+            color: "#9CA3AF",
+          }}
+        >
           Don't have an account?{" "}
           <span
             onClick={() => (window.location.href = "/register")}
-            style={{ color: C.lavenderDark, fontWeight: "600", cursor: "pointer" }}
-          >Register here</span>
+            style={{ color: C.primary, fontWeight: "600", cursor: "pointer" }}
+          >
+            Register here
+          </span>
         </p>
       </div>
     </div>

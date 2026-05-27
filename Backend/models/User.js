@@ -12,6 +12,11 @@ const userSchema = new mongoose.Schema(
     points: { type: Number, default: 0 },
     rating: { type: Number, default: 0 },
     totalRatings: { type: Number, default: 0 },
+
+    // ── OTP Email Verification ──────────────────────
+    isVerified: { type: Boolean, default: false },
+    otp: { type: String, default: null },
+    otpExpiry: { type: Date, default: null },
   },
   { timestamps: true },
 );

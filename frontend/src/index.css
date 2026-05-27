@@ -4,168 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Pastel design tokens ─────────────────────────────────────────── */
-:root {
-  --color-blue:         #BDE8FF;
-  --color-lavender:     #D8C9FF;
-  --color-pink:         #FFB3CC;
-  --color-yellow:       #FFFAB3;
-
-  --color-blue-dark:    #4BA8D4;
-  --color-lavender-dark:#7C5CBF;
-  --color-pink-dark:    #D45580;
-  --color-yellow-dark:  #B8A800;
-
-  --color-text:         #2D2040;
-  --color-muted:        #8B7DAA;
-  --color-border:       #E8DFFF;
-  --color-bg:           #F6F3FF;
-  --color-white:        #FFFFFF;
-
-  --gradient-primary:   linear-gradient(135deg, #D8C9FF, #FFB3CC);
-  --gradient-cool:      linear-gradient(135deg, #BDE8FF, #D8C9FF);
-  --gradient-warm:      linear-gradient(135deg, #FFB3CC, #FFFAB3);
-  --gradient-dark:      linear-gradient(135deg, #1C1235, #2D1F4E);
-}
-
-/* ── Reset ────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
 }
 
 body {
-  background-color: var(--color-bg);
+  background-color: #f0f6f9;
   margin: 0;
   padding: 0;
 }
 
-/* ── Scrollbar ────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-lavender); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-lavender-dark); }
-
-/* ── Tailwind utility overrides ───────────────────────────────────── */
 @layer utilities {
-
-  /* Gradient fills — pastel replacements */
   .gradient-primary {
-    background: var(--gradient-primary);
+    background: #809bce;
   }
-  .gradient-cool {
-    background: var(--gradient-cool);
-  }
-  .gradient-warm {
-    background: var(--gradient-warm);
+  .gradient-purple {
+    background: #95b8d1;
   }
   .gradient-dark {
-    background: var(--gradient-dark);
+    background: #2e3a5c;
   }
-
-  /* Text gradient */
   .text-gradient {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Blob helpers */
-  .blob-lavender {
-    background: var(--color-lavender);
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.35;
-  }
-  .blob-pink {
-    background: var(--color-pink);
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.35;
+    color: #809bce;
   }
   .blob-blue {
-    background: var(--color-blue);
+    background: #809bce;
     border-radius: 50%;
     filter: blur(80px);
-    opacity: 0.4;
+    opacity: 0.15;
   }
-  .blob-yellow {
-    background: var(--color-yellow);
+  .blob-pink {
+    background: #eac4d5;
     border-radius: 50%;
-    filter: blur(70px);
-    opacity: 0.35;
-  }
-
-  /* Shadow helpers */
-  .shadow-pastel {
-    box-shadow: 0 8px 32px rgba(216, 201, 255, 0.45);
-  }
-  .shadow-purple-lg {
-    box-shadow: 0 8px 32px rgba(124, 92, 191, 0.18);
-  }
-  .shadow-purple-btn {
-    box-shadow: 0 4px 16px rgba(216, 201, 255, 0.6);
-  }
-
-  /* Pastel card */
-  .card-pastel {
-    background: var(--color-white);
-    border-radius: 20px;
-    border: 2px solid var(--color-border);
-    box-shadow: 0 4px 20px rgba(124, 92, 191, 0.08);
-  }
-
-  /* Pastel input */
-  .input-pastel {
-    background: rgba(216, 201, 255, 0.15);
-    border: 2px solid var(--color-border);
-    border-radius: 12px;
-    color: var(--color-text);
-    outline: none;
-    font-family: "Poppins", sans-serif;
-    transition: border-color 0.2s;
-  }
-  .input-pastel:focus {
-    border-color: var(--color-lavender-dark);
+    filter: blur(80px);
+    opacity: 0.2;
   }
 }
-
-/* ── Keyframe animations (kept from original) ─────────────────────── */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-12px); }
-}
-
-@keyframes blob {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(15px, -15px) scale(1.05); }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(40px) scale(0.95); opacity: 0; }
-  to   { transform: translateY(0)    scale(1);    opacity: 1; }
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes popIn {
-  from { transform: scale(0) rotate(-10deg); opacity: 0; }
-  to   { transform: scale(1) rotate(0deg);  opacity: 1; }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* ── Animation classes ────────────────────────────────────────────── */
-.animate-float     { animation: float     3s ease-in-out infinite; }
-.animate-blob      { animation: blob      8s ease-in-out infinite; }
-.animate-slide-up  { animation: slideUp   0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.animate-fade-up   { animation: fadeUp    0.5s ease both; }
-.animate-pop-in    { animation: popIn     0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.animate-spin-slow { animation: spin     12s linear infinite; }
