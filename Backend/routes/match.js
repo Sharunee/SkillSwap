@@ -3,34 +3,82 @@ const router = express.Router();
 const User = require("../models/User");
 const protect = require("../middleware/authMiddleware");
 
+/**
+ * Checks whether two skill entries are location-compatible.
+ * Returns true if either side is Online-only (no physical presence needed),
+ * or if both share a physical location (case-insensitive trim match).
+ */
+function locationsCompatible(skillA, skillB) {
+  const modeA = skillA.mode;
+  const modeB = skillB.mode;
+
+  // If either side is Online-only, they are always compatible (virtual meet)
+  if (modeA === "Online" || modeB === "Online") return true;
+
+  // Both sides require a physical presence (In-Person or Both)
+  // Require that their listed locations match
+  const locA = (skillA.location || "").trim().toLowerCase();
+  const locB = (skillB.location || "").trim().toLowerCase();
+
+  return locA.length > 0 && locB.length > 0 && locA === locB;
+}
+
 router.get("/", protect, async (req, res) => {
   try {
-    // Get current user
     const currentUser = await User.findById(req.user.userId);
-
-    // Get all other users
     const allUsers = await User.find({ _id: { $ne: req.user.userId } });
 
-    // Calculate match score for each user
     const matches = allUsers.map((otherUser) => {
-      let score = 0;
+      // ── Skills the other user can TEACH me ─────────────────────────────
+      // currentUser.skillsWanted  vs  otherUser.skillsOffered
+      const skillsICanLearn = []; // { skill, mode, location, locationMatch }
+      let scoreLearn = 0;
 
-      // What current user offers vs what other user wants
-      const skillsICanTeach = currentUser.skillsOffered.filter((skill) =>
-        otherUser.skillsWanted.includes(skill),
-      );
+      for (const wanted of currentUser.skillsWanted) {
+        for (const offered of otherUser.skillsOffered) {
+          if (
+            wanted.skill.trim().toLowerCase() ===
+            offered.skill.trim().toLowerCase()
+          ) {
+            const locMatch = locationsCompatible(wanted, offered);
+            skillsICanLearn.push({
+              skill: offered.skill,
+              mode: offered.mode,
+              location: offered.location || "",
+              locationMatch: locMatch,
+            });
+            scoreLearn += locMatch ? 80 : 40;
+            break; // one match per wanted skill is enough
+          }
+        }
+      }
 
-      // What current user wants vs what other user offers
-      const skillsICanLearn = currentUser.skillsWanted.filter((skill) =>
-        otherUser.skillsOffered.includes(skill),
-      );
+      // ── Skills I can TEACH the other user ──────────────────────────────
+      // currentUser.skillsOffered  vs  otherUser.skillsWanted
+      const skillsICanTeach = []; // { skill, mode, location, locationMatch }
+      let scoreTeach = 0;
 
-      // Calculate score
-      score += skillsICanTeach.length * 50;
-      score += skillsICanLearn.length * 50;
+      for (const offered of currentUser.skillsOffered) {
+        for (const wanted of otherUser.skillsWanted) {
+          if (
+            offered.skill.trim().toLowerCase() ===
+            wanted.skill.trim().toLowerCase()
+          ) {
+            const locMatch = locationsCompatible(offered, wanted);
+            skillsICanTeach.push({
+              skill: offered.skill,
+              mode: offered.mode,
+              location: offered.location || "",
+              locationMatch: locMatch,
+            });
+            scoreTeach += locMatch ? 80 : 40;
+            break;
+          }
+        }
+      }
 
-      // Cap at 100
-      const matchPercent = Math.min(score, 100);
+      const totalScore = scoreLearn + scoreTeach;
+      const matchPercent = Math.min(totalScore, 100);
 
       return {
         user: {
@@ -48,7 +96,7 @@ router.get("/", protect, async (req, res) => {
       };
     });
 
-    // Filter users with at least some match and sort by score
+    // Only users where at least one skill matches (regardless of location)
     const sorted = matches
       .filter((m) => m.matchPercent > 0)
       .sort((a, b) => b.matchPercent - a.matchPercent);

@@ -12,6 +12,166 @@ const C = {
   white: "#ffffff",
 };
 
+// ── Reusable skill-entry form ──────────────────────────────────────────────
+function SkillForm({ onAdd, placeholder }) {
+  const [skill, setSkill] = useState("");
+  const [mode, setMode] = useState("Online");
+  const [location, setLocation] = useState("");
+
+  const handleAdd = () => {
+    const trimmed = skill.trim();
+    if (!trimmed) return;
+    onAdd({
+      skill: trimmed,
+      mode,
+      location: mode === "Online" ? "" : location.trim(),
+    });
+    setSkill("");
+    setMode("Online");
+    setLocation("");
+  };
+
+  const inputStyle = {
+    padding: "11px 14px",
+    border: `2px solid ${C.light}`,
+    borderRadius: "12px",
+    fontSize: "13px",
+    outline: "none",
+    background: C.bg,
+    color: C.dark,
+    fontFamily: "Poppins, sans-serif",
+    boxSizing: "border-box",
+    width: "100%",
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    cursor: "pointer",
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        marginBottom: "12px",
+      }}
+    >
+      {/* Row 1: skill name + add button */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        <input
+          style={{ ...inputStyle, flex: 1 }}
+          value={skill}
+          onChange={(e) => setSkill(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          placeholder={placeholder}
+        />
+        <button
+          onClick={handleAdd}
+          style={{
+            padding: "11px 16px",
+            background: C.primary,
+            color: C.white,
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            fontSize: "18px",
+            cursor: "pointer",
+            fontFamily: "Poppins, sans-serif",
+            flexShrink: 0,
+          }}
+        >
+          +
+        </button>
+      </div>
+
+      {/* Row 2: mode selector */}
+      <select
+        value={mode}
+        onChange={(e) => setMode(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="Online">🌐 Online</option>
+        <option value="In-Person">📍 In-Person</option>
+        <option value="Both">🔄 Both (Online & In-Person)</option>
+      </select>
+
+      {/* Row 3: location — only shown for In-Person / Both */}
+      {mode !== "Online" && (
+        <input
+          style={inputStyle}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="📍 City / Area (e.g. Colombo, Kandy...)"
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Skill tag with mode + location badge ──────────────────────────────────
+function SkillTag({ entry, onRemove, bgColor, borderColor }) {
+  const modeIcon =
+    entry.mode === "Online" ? "🌐" : entry.mode === "In-Person" ? "📍" : "🔄";
+  const modeLabel =
+    entry.mode === "Online"
+      ? "Online"
+      : entry.mode === "In-Person"
+        ? entry.location || "In-Person"
+        : entry.location
+          ? `Both · ${entry.location}`
+          : "Both";
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "5px",
+        padding: "5px 10px 5px 12px",
+        background: bgColor,
+        color: C.dark,
+        border: `1px solid ${borderColor}`,
+        borderRadius: "20px",
+        fontSize: "12px",
+        fontWeight: "600",
+        margin: "3px",
+      }}
+    >
+      <span>{entry.skill}</span>
+      <span
+        style={{
+          fontSize: "10px",
+          color: "#6B7280",
+          fontWeight: "400",
+          background: "rgba(0,0,0,0.05)",
+          borderRadius: "10px",
+          padding: "1px 6px",
+        }}
+      >
+        {modeIcon} {modeLabel}
+      </span>
+      <button
+        onClick={onRemove}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: C.dark,
+          opacity: 0.5,
+          fontSize: "14px",
+          padding: "0 0 0 2px",
+          lineHeight: 1,
+        }}
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
+// ── Main Profile component ─────────────────────────────────────────────────
 function Profile() {
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
@@ -19,8 +179,6 @@ function Profile() {
   const [location, setLocation] = useState("");
   const [skillsOffered, setSkillsOffered] = useState([]);
   const [skillsWanted, setSkillsWanted] = useState([]);
-  const [newOffered, setNewOffered] = useState("");
-  const [newWanted, setNewWanted] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -46,17 +204,24 @@ function Profile() {
     }
   };
 
-  const addOffered = () => {
-    if (newOffered.trim() && !skillsOffered.includes(newOffered.trim())) {
-      setSkillsOffered([...skillsOffered, newOffered.trim()]);
-      setNewOffered("");
+  const addOffered = (entry) => {
+    // Prevent duplicate skill names
+    if (
+      !skillsOffered.find(
+        (s) => s.skill.toLowerCase() === entry.skill.toLowerCase(),
+      )
+    ) {
+      setSkillsOffered([...skillsOffered, entry]);
     }
   };
 
-  const addWanted = () => {
-    if (newWanted.trim() && !skillsWanted.includes(newWanted.trim())) {
-      setSkillsWanted([...skillsWanted, newWanted.trim()]);
-      setNewWanted("");
+  const addWanted = (entry) => {
+    if (
+      !skillsWanted.find(
+        (s) => s.skill.toLowerCase() === entry.skill.toLowerCase(),
+      )
+    ) {
+      setSkillsWanted([...skillsWanted, entry]);
     }
   };
 
@@ -89,6 +254,14 @@ function Profile() {
     marginBottom: "20px",
   };
 
+  const labelStyle = {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  };
+
   const inputStyle = {
     width: "100%",
     padding: "11px 14px",
@@ -112,34 +285,6 @@ function Profile() {
     fontSize: "14px",
     cursor: "pointer",
     fontFamily: "Poppins, sans-serif",
-  };
-
-  const tagStyleOffered = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "6px",
-    padding: "4px 12px",
-    background: C.light,
-    color: C.dark,
-    border: `1px solid ${C.accent}`,
-    borderRadius: "20px",
-    fontSize: "12px",
-    fontWeight: "600",
-    margin: "3px",
-  };
-
-  const tagStyleWanted = {
-    ...tagStyleOffered,
-    background: C.soft,
-    border: `1px solid ${C.secondary}`,
-  };
-
-  const labelStyle = {
-    fontSize: "11px",
-    fontWeight: "600",
-    color: "#9CA3AF",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
   };
 
   return (
@@ -283,7 +428,7 @@ function Profile() {
           )}
         </div>
 
-        {/* Skills Offered */}
+        {/* Skills I Can Teach */}
         <div style={cardStyle}>
           <h3
             style={{
@@ -295,21 +440,7 @@ function Profile() {
           >
             🎯 Skills I Can Teach
           </h3>
-          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-            <input
-              style={{ ...inputStyle, flex: 1 }}
-              value={newOffered}
-              onChange={(e) => setNewOffered(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addOffered()}
-              placeholder="e.g. React, Guitar..."
-            />
-            <button
-              onClick={addOffered}
-              style={{ ...btnStyle, padding: "11px 16px", fontSize: "18px" }}
-            >
-              +
-            </button>
-          </div>
+          <SkillForm onAdd={addOffered} placeholder="e.g. React, Guitar..." />
           <div
             style={{
               minHeight: "44px",
@@ -326,32 +457,24 @@ function Profile() {
                 Add your first skill!
               </span>
             ) : (
-              skillsOffered.map((s) => (
-                <span key={s} style={tagStyleOffered}>
-                  {s}
-                  <button
-                    onClick={() =>
-                      setSkillsOffered(skillsOffered.filter((x) => x !== s))
-                    }
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: C.dark,
-                      opacity: 0.5,
-                      fontSize: "14px",
-                      padding: 0,
-                    }}
-                  >
-                    ×
-                  </button>
-                </span>
+              skillsOffered.map((s, i) => (
+                <SkillTag
+                  key={i}
+                  entry={s}
+                  bgColor={C.light}
+                  borderColor={C.accent}
+                  onRemove={() =>
+                    setSkillsOffered(
+                      skillsOffered.filter((_, idx) => idx !== i),
+                    )
+                  }
+                />
               ))
             )}
           </div>
         </div>
 
-        {/* Skills Wanted */}
+        {/* Skills I Want to Learn */}
         <div style={cardStyle}>
           <h3
             style={{
@@ -363,21 +486,10 @@ function Profile() {
           >
             📚 Skills I Want to Learn
           </h3>
-          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-            <input
-              style={{ ...inputStyle, flex: 1 }}
-              value={newWanted}
-              onChange={(e) => setNewWanted(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addWanted()}
-              placeholder="e.g. Python, Photography..."
-            />
-            <button
-              onClick={addWanted}
-              style={{ ...btnStyle, padding: "11px 16px", fontSize: "18px" }}
-            >
-              +
-            </button>
-          </div>
+          <SkillForm
+            onAdd={addWanted}
+            placeholder="e.g. Python, Photography..."
+          />
           <div
             style={{
               minHeight: "44px",
@@ -394,26 +506,16 @@ function Profile() {
                 What do you want to learn?
               </span>
             ) : (
-              skillsWanted.map((s) => (
-                <span key={s} style={tagStyleWanted}>
-                  {s}
-                  <button
-                    onClick={() =>
-                      setSkillsWanted(skillsWanted.filter((x) => x !== s))
-                    }
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: C.dark,
-                      opacity: 0.5,
-                      fontSize: "14px",
-                      padding: 0,
-                    }}
-                  >
-                    ×
-                  </button>
-                </span>
+              skillsWanted.map((s, i) => (
+                <SkillTag
+                  key={i}
+                  entry={s}
+                  bgColor={C.soft}
+                  borderColor={C.secondary}
+                  onRemove={() =>
+                    setSkillsWanted(skillsWanted.filter((_, idx) => idx !== i))
+                  }
+                />
               ))
             )}
           </div>

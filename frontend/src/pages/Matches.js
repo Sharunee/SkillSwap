@@ -12,25 +12,238 @@ const C = {
   white: "#ffffff",
 };
 
-function Matches({ onStartChat }) {
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
+// ── Reusable skill-entry form ──────────────────────────────────────────────
+function SkillForm({ onAdd, placeholder }) {
+  const [skill, setSkill] = useState("");
+  const [mode, setMode] = useState("Online");
+  const [location, setLocation] = useState("");
+
+  const handleAdd = () => {
+    const trimmed = skill.trim();
+    if (!trimmed) return;
+    onAdd({
+      skill: trimmed,
+      mode,
+      location: mode === "Online" ? "" : location.trim(),
+    });
+    setSkill("");
+    setMode("Online");
+    setLocation("");
+  };
+
+  const inputStyle = {
+    padding: "11px 14px",
+    border: `2px solid ${C.light}`,
+    borderRadius: "12px",
+    fontSize: "13px",
+    outline: "none",
+    background: C.bg,
+    color: C.dark,
+    fontFamily: "Poppins, sans-serif",
+    boxSizing: "border-box",
+    width: "100%",
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    cursor: "pointer",
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        marginBottom: "12px",
+      }}
+    >
+      {/* Row 1: skill name + add button */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        <input
+          style={{ ...inputStyle, flex: 1 }}
+          value={skill}
+          onChange={(e) => setSkill(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          placeholder={placeholder}
+        />
+        <button
+          onClick={handleAdd}
+          style={{
+            padding: "11px 16px",
+            background: C.primary,
+            color: C.white,
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            fontSize: "18px",
+            cursor: "pointer",
+            fontFamily: "Poppins, sans-serif",
+            flexShrink: 0,
+          }}
+        >
+          +
+        </button>
+      </div>
+
+      {/* Row 2: mode selector */}
+      <select
+        value={mode}
+        onChange={(e) => setMode(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="Online">🌐 Online</option>
+        <option value="In-Person">📍 In-Person</option>
+        <option value="Both">🔄 Both (Online & In-Person)</option>
+      </select>
+
+      {/* Row 3: location — only shown for In-Person / Both */}
+      {mode !== "Online" && (
+        <input
+          style={inputStyle}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="📍 City / Area (e.g. Colombo, Kandy...)"
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Skill tag with mode + location badge ──────────────────────────────────
+function SkillTag({ entry, onRemove, bgColor, borderColor }) {
+  const modeIcon =
+    entry.mode === "Online" ? "🌐" : entry.mode === "In-Person" ? "📍" : "🔄";
+  const modeLabel =
+    entry.mode === "Online"
+      ? "Online"
+      : entry.mode === "In-Person"
+        ? entry.location || "In-Person"
+        : entry.location
+          ? `Both · ${entry.location}`
+          : "Both";
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "5px",
+        padding: "5px 10px 5px 12px",
+        background: bgColor,
+        color: C.dark,
+        border: `1px solid ${borderColor}`,
+        borderRadius: "20px",
+        fontSize: "12px",
+        fontWeight: "600",
+        margin: "3px",
+      }}
+    >
+      <span>{entry.skill}</span>
+      <span
+        style={{
+          fontSize: "10px",
+          color: "#6B7280",
+          fontWeight: "400",
+          background: "rgba(0,0,0,0.05)",
+          borderRadius: "10px",
+          padding: "1px 6px",
+        }}
+      >
+        {modeIcon} {modeLabel}
+      </span>
+      <button
+        onClick={onRemove}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: C.dark,
+          opacity: 0.5,
+          fontSize: "14px",
+          padding: "0 0 0 2px",
+          lineHeight: 1,
+        }}
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
+// ── Main Profile component ─────────────────────────────────────────────────
+function Profile() {
+  const [user, setUser] = useState(null);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [location, setLocation] = useState("");
+  const [skillsOffered, setSkillsOffered] = useState([]);
+  const [skillsWanted, setSkillsWanted] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/matches", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMatches(res.data);
-      } catch (e) {
-        console.log(e);
-      }
-      setLoading(false);
-    };
-    fetchMatches();
+    const stored = localStorage.getItem("user");
+    if (stored) setUser(JSON.parse(stored));
+    loadProfile();
   }, []);
+
+  const loadProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/users/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setName(res.data.name || "");
+      setBio(res.data.bio || "");
+      setLocation(res.data.location || "");
+      setSkillsOffered(res.data.skillsOffered || []);
+      setSkillsWanted(res.data.skillsWanted || []);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const addOffered = (entry) => {
+    // Prevent duplicate skill names
+    if (
+      !skillsOffered.find(
+        (s) => s.skill.toLowerCase() === entry.skill.toLowerCase(),
+      )
+    ) {
+      setSkillsOffered([...skillsOffered, entry]);
+    }
+  };
+
+  const addWanted = (entry) => {
+    if (
+      !skillsWanted.find(
+        (s) => s.skill.toLowerCase() === entry.skill.toLowerCase(),
+      )
+    ) {
+      setSkillsWanted([...skillsWanted, entry]);
+    }
+  };
+
+  const saveProfile = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        "http://localhost:5000/api/users/profile",
+        { name, bio, location, skillsOffered, skillsWanted },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const updated = { ...user, name: res.data.name };
+      localStorage.setItem("user", JSON.stringify(updated));
+      setUser(updated);
+      setMessage("✅ Profile saved!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch {
+      setMessage("❌ Save failed");
+    }
+    setSaving(false);
+  };
 
   const cardStyle = {
     background: C.white,
@@ -38,272 +251,278 @@ function Matches({ onStartChat }) {
     padding: "24px",
     border: `2px solid ${C.light}`,
     boxShadow: "0 4px 20px rgba(128,155,206,0.10)",
+    marginBottom: "20px",
   };
 
-  if (loading)
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "80px",
-          color: "#9CA3AF",
-          fontSize: "16px",
-          fontFamily: "Poppins, sans-serif",
-        }}
-      >
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
-        Finding your matches...
-      </div>
-    );
+  const labelStyle = {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  };
 
-  if (matches.length === 0)
-    return (
-      <div
-        style={{
-          ...cardStyle,
-          textAlign: "center",
-          padding: "80px 40px",
-          fontFamily: "Poppins, sans-serif",
-        }}
-      >
-        <div style={{ fontSize: "56px", marginBottom: "20px" }}>🤝</div>
-        <h2
-          style={{
-            fontSize: "22px",
-            fontWeight: "700",
-            color: C.primary,
-            marginBottom: "8px",
-          }}
-        >
-          No Matches Yet!
-        </h2>
-        <p style={{ color: "#9CA3AF", fontSize: "14px" }}>
-          Add more skills to your profile to find matches!
-        </p>
-      </div>
-    );
+  const inputStyle = {
+    width: "100%",
+    padding: "11px 14px",
+    border: `2px solid ${C.light}`,
+    borderRadius: "12px",
+    fontSize: "13px",
+    outline: "none",
+    background: C.bg,
+    color: C.dark,
+    fontFamily: "Poppins, sans-serif",
+    boxSizing: "border-box",
+  };
+
+  const btnStyle = {
+    padding: "12px 24px",
+    background: C.primary,
+    color: C.white,
+    border: "none",
+    borderRadius: "12px",
+    fontWeight: "700",
+    fontSize: "14px",
+    cursor: "pointer",
+    fontFamily: "Poppins, sans-serif",
+  };
 
   return (
     <div style={{ fontFamily: "Poppins, sans-serif" }}>
-      <p style={{ color: "#9CA3AF", fontSize: "14px", marginBottom: "20px" }}>
-        Found{" "}
-        <strong style={{ color: C.primary }}>
-          {matches.length} match{matches.length > 1 ? "es" : ""}
-        </strong>{" "}
-        based on your skills!
-      </p>
-
+      {/* Profile Header */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          ...cardStyle,
+          display: "flex",
+          alignItems: "center",
           gap: "20px",
         }}
       >
-        {matches.map((match, i) => (
-          <div key={i} style={cardStyle}>
-            {/* Header */}
-            <div
+        <div
+          style={{
+            width: "64px",
+            height: "64px",
+            borderRadius: "50%",
+            background: C.primary,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: C.white,
+            fontWeight: "800",
+            fontSize: "26px",
+            flexShrink: 0,
+          }}
+        >
+          {name?.charAt(0)?.toUpperCase() || "?"}
+        </div>
+        <div>
+          <h2 style={{ fontSize: "18px", fontWeight: "700", color: C.dark }}>
+            {name || "Your Name"}
+          </h2>
+          <p style={{ fontSize: "13px", color: "#9CA3AF", marginTop: "2px" }}>
+            {user?.email}
+          </p>
+          <span
+            style={{
+              display: "inline-block",
+              background: C.light,
+              color: "#2a6b3a",
+              border: `1px solid ${C.accent}`,
+              borderRadius: "20px",
+              padding: "2px 10px",
+              fontSize: "11px",
+              fontWeight: "600",
+              marginTop: "6px",
+            }}
+          >
+            ✓ Active Member
+          </span>
+        </div>
+      </div>
+
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}
+      >
+        {/* Personal Info */}
+        <div style={cardStyle}>
+          <h3
+            style={{
+              fontSize: "14px",
+              fontWeight: "700",
+              color: C.dark,
+              marginBottom: "16px",
+            }}
+          >
+            👤 Personal Info
+          </h3>
+          <label style={labelStyle}>Full Name</label>
+          <input
+            style={{ ...inputStyle, margin: "5px 0 14px" }}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your full name"
+          />
+          <label style={labelStyle}>Location</label>
+          <input
+            style={{ ...inputStyle, margin: "5px 0 14px" }}
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="City, Country"
+          />
+          <label style={labelStyle}>Bio</label>
+          <input
+            style={{ ...inputStyle, margin: "5px 0 0" }}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Tell others about yourself..."
+          />
+        </div>
+
+        {/* Save */}
+        <div style={cardStyle}>
+          <h3
+            style={{
+              fontSize: "14px",
+              fontWeight: "700",
+              color: C.dark,
+              marginBottom: "12px",
+            }}
+          >
+            💾 Save Changes
+          </h3>
+          <p
+            style={{
+              color: "#9CA3AF",
+              fontSize: "13px",
+              lineHeight: 1.7,
+              marginBottom: "16px",
+            }}
+          >
+            Make sure all your details are correct before saving. Your profile
+            is visible to other SkillSwap members for matching.
+          </p>
+          <button
+            onClick={saveProfile}
+            disabled={saving}
+            style={{
+              ...btnStyle,
+              width: "100%",
+              padding: "14px",
+              fontSize: "15px",
+            }}
+          >
+            {saving ? "Saving..." : "💾 Save Profile"}
+          </button>
+          {message && (
+            <p
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "14px",
-                marginBottom: "16px",
+                marginTop: "12px",
+                textAlign: "center",
+                fontSize: "13px",
+                color: message.includes("✅") ? "#2a6b3a" : "#b91c1c",
+                fontWeight: "600",
               }}
             >
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  borderRadius: "50%",
-                  background: C.primary,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: C.white,
-                  fontWeight: "800",
-                  fontSize: "20px",
-                  flexShrink: 0,
-                }}
-              >
-                {match.user.name?.charAt(0)?.toUpperCase()}
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: C.dark,
-                    marginBottom: "2px",
-                  }}
-                >
-                  {match.user.name}
-                </h3>
-                <p style={{ fontSize: "12px", color: "#9CA3AF" }}>
-                  📍 {match.user.location || "Location not set"}
-                </p>
-              </div>
-              <div
-                style={{
-                  background: match.matchPercent >= 75 ? C.light : C.accent,
-                  border: `2px solid ${match.matchPercent >= 75 ? C.accent : C.secondary}`,
-                  borderRadius: "12px",
-                  padding: "6px 12px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: "800",
-                    color: C.dark,
-                    lineHeight: 1,
-                  }}
-                >
-                  {match.matchPercent}%
-                </p>
-                <p
-                  style={{
-                    fontSize: "10px",
-                    color: "#9CA3AF",
-                    marginTop: "2px",
-                  }}
-                >
-                  Match
-                </p>
-              </div>
-            </div>
+              {message}
+            </p>
+          )}
+        </div>
 
-            {/* Match bar */}
-            <div style={{ marginBottom: "16px" }}>
-              <div
-                style={{
-                  height: "6px",
-                  background: C.light,
-                  borderRadius: "3px",
-                  overflow: "hidden",
-                }}
+        {/* Skills I Can Teach */}
+        <div style={cardStyle}>
+          <h3
+            style={{
+              fontSize: "14px",
+              fontWeight: "700",
+              color: C.dark,
+              marginBottom: "16px",
+            }}
+          >
+            🎯 Skills I Can Teach
+          </h3>
+          <SkillForm onAdd={addOffered} placeholder="e.g. React, Guitar..." />
+          <div
+            style={{
+              minHeight: "44px",
+              padding: "10px",
+              background: C.light,
+              borderRadius: "10px",
+              border: `2px dashed ${C.accent}`,
+            }}
+          >
+            {skillsOffered.length === 0 ? (
+              <span
+                style={{ color: "#bbb", fontSize: "12px", fontStyle: "italic" }}
               >
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${match.matchPercent}%`,
-                    background: C.primary,
-                    borderRadius: "3px",
-                  }}
+                Add your first skill!
+              </span>
+            ) : (
+              skillsOffered.map((s, i) => (
+                <SkillTag
+                  key={i}
+                  entry={s}
+                  bgColor={C.light}
+                  borderColor={C.accent}
+                  onRemove={() =>
+                    setSkillsOffered(
+                      skillsOffered.filter((_, idx) => idx !== i),
+                    )
+                  }
                 />
-              </div>
-            </div>
-
-            {/* Bio */}
-            {match.user.bio && (
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#6B7280",
-                  marginBottom: "16px",
-                  lineHeight: 1.6,
-                }}
-              >
-                {match.user.bio}
-              </p>
+              ))
             )}
-
-            {/* They can teach me */}
-            {match.skillsICanLearn.length > 0 && (
-              <div style={{ marginBottom: "12px" }}>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#9CA3AF",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    marginBottom: "6px",
-                  }}
-                >
-                  🎯 They can teach you
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {match.skillsICanLearn.map((s) => (
-                    <span
-                      key={s}
-                      style={{
-                        padding: "3px 10px",
-                        background: C.light,
-                        color: C.dark,
-                        border: `1px solid ${C.accent}`,
-                        borderRadius: "20px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* I can teach them */}
-            {match.skillsICanTeach.length > 0 && (
-              <div style={{ marginBottom: "16px" }}>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#9CA3AF",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    marginBottom: "6px",
-                  }}
-                >
-                  📚 You can teach them
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {match.skillsICanTeach.map((s) => (
-                    <span
-                      key={s}
-                      style={{
-                        padding: "3px 10px",
-                        background: C.accent,
-                        color: C.dark,
-                        border: `1px solid ${C.secondary}`,
-                        borderRadius: "20px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Chat Button */}
-            <button
-              onClick={() => onStartChat && onStartChat(match.user)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                background: C.primary,
-                color: C.white,
-                border: "none",
-                borderRadius: "12px",
-                fontSize: "14px",
-                fontWeight: "700",
-                cursor: "pointer",
-                fontFamily: "Poppins, sans-serif",
-              }}
-            >
-              💬 Start Chat
-            </button>
           </div>
-        ))}
+        </div>
+
+        {/* Skills I Want to Learn */}
+        <div style={cardStyle}>
+          <h3
+            style={{
+              fontSize: "14px",
+              fontWeight: "700",
+              color: C.dark,
+              marginBottom: "16px",
+            }}
+          >
+            📚 Skills I Want to Learn
+          </h3>
+          <SkillForm
+            onAdd={addWanted}
+            placeholder="e.g. Python, Photography..."
+          />
+          <div
+            style={{
+              minHeight: "44px",
+              padding: "10px",
+              background: C.soft,
+              borderRadius: "10px",
+              border: `2px dashed ${C.secondary}`,
+            }}
+          >
+            {skillsWanted.length === 0 ? (
+              <span
+                style={{ color: "#bbb", fontSize: "12px", fontStyle: "italic" }}
+              >
+                What do you want to learn?
+              </span>
+            ) : (
+              skillsWanted.map((s, i) => (
+                <SkillTag
+                  key={i}
+                  entry={s}
+                  bgColor={C.soft}
+                  borderColor={C.secondary}
+                  onRemove={() =>
+                    setSkillsWanted(skillsWanted.filter((_, idx) => idx !== i))
+                  }
+                />
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-export default Matches;
+export default Profile;

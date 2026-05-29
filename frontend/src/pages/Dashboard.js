@@ -525,9 +525,26 @@ function Dashboard() {
                       No skills added yet
                     </span>
                   ) : (
-                    skillsOffered.map((s) => (
-                      <span key={s} style={tagStyleOffered}>
-                        {s}
+                    skillsOffered.map((s, i) => (
+                      <span key={i} style={tagStyleOffered}>
+                        {s.skill || s}
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            color: "#6B7280",
+                            fontWeight: "400",
+                            marginLeft: "4px",
+                          }}
+                        >
+                          {s.mode === "Online"
+                            ? "🌐"
+                            : s.mode === "In-Person"
+                              ? "📍"
+                              : "🔄"}
+                          {s.mode !== "Online" && s.location
+                            ? ` ${s.location}`
+                            : ""}
+                        </span>
                       </span>
                     ))
                   )}
@@ -589,9 +606,26 @@ function Dashboard() {
                       No skills added yet
                     </span>
                   ) : (
-                    skillsWanted.map((s) => (
-                      <span key={s} style={tagStyleWanted}>
-                        {s}
+                    skillsWanted.map((s, i) => (
+                      <span key={i} style={tagStyleWanted}>
+                        {s.skill || s}
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            color: "#6B7280",
+                            fontWeight: "400",
+                            marginLeft: "4px",
+                          }}
+                        >
+                          {s.mode === "Online"
+                            ? "🌐"
+                            : s.mode === "In-Person"
+                              ? "📍"
+                              : "🔄"}
+                          {s.mode !== "Online" && s.location
+                            ? ` ${s.location}`
+                            : ""}
+                        </span>
                       </span>
                     ))
                   )}
