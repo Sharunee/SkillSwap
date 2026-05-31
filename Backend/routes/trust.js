@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Rating = require("../models/Rating");
 const User = require("../models/User");
-const Session = require("../models/Session");
+const Session = require("../models/session");
 const protect = require("../middleware/authMiddleware");
 
 // Submit a rating

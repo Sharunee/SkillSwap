@@ -3,106 +3,144 @@ const router = express.Router();
 const User = require("../models/User");
 const protect = require("../middleware/authMiddleware");
 
-/**
- * Checks whether two skill entries are location-compatible.
- * Returns true if either side is Online-only (no physical presence needed),
- * or if both share a physical location (case-insensitive trim match).
- */
 function locationsCompatible(skillA, skillB) {
-  const modeA = skillA.mode;
-  const modeB = skillB.mode;
+  const modeA = skillA.mode || "Online";
+  const modeB = skillB.mode || "Online";
 
-  // If either side is Online-only, they are always compatible (virtual meet)
-  if (modeA === "Online" || modeB === "Online") return true;
+  // Both can do Online → compatible (no location needed)
+  const aOnline = modeA === "Online" || modeA === "Both";
+  const bOnline = modeB === "Online" || modeB === "Both";
+  if (aOnline && bOnline) return true;
 
-  // Both sides require a physical presence (In-Person or Both)
-  // Require that their listed locations match
-  const locA = (skillA.location || "").trim().toLowerCase();
-  const locB = (skillB.location || "").trim().toLowerCase();
+  // Both can do In-Person → compatible only if locations match or either is unset
+  const aInPerson = modeA === "In-Person" || modeA === "Both";
+  const bInPerson = modeB === "In-Person" || modeB === "Both";
+  if (aInPerson && bInPerson) {
+    const locA = (skillA.location || "").trim().toLowerCase();
+    const locB = (skillB.location || "").trim().toLowerCase();
+    // If either has no location set, allow the match (user can clarify later)
+    if (!locA || !locB) return true;
+    return locA === locB;
+  }
 
-  return locA.length > 0 && locB.length > 0 && locA === locB;
+  // One side is Online-only, the other is In-Person-only → incompatible
+  return false;
 }
 
 router.get("/", protect, async (req, res) => {
   try {
     const currentUser = await User.findById(req.user.userId);
+    if (!currentUser)
+      return res.status(404).json({ message: "User not found" });
+
+    // Safely normalise arrays — old documents may not have these fields
+    const myWanted = Array.isArray(currentUser.skillsWanted)
+      ? currentUser.skillsWanted
+      : [];
+    const myOffered = Array.isArray(currentUser.skillsOffered)
+      ? currentUser.skillsOffered
+      : [];
+
     const allUsers = await User.find({ _id: { $ne: req.user.userId } });
 
     const matches = allUsers.map((otherUser) => {
-      // ── Skills the other user can TEACH me ─────────────────────────────
-      // currentUser.skillsWanted  vs  otherUser.skillsOffered
-      const skillsICanLearn = []; // { skill, mode, location, locationMatch }
+      // Safely normalise the other user's arrays too
+      const theirOffered = Array.isArray(otherUser.skillsOffered)
+        ? otherUser.skillsOffered
+        : [];
+      const theirWanted = Array.isArray(otherUser.skillsWanted)
+        ? otherUser.skillsWanted
+        : [];
+
+      // ── Skills I can learn from them ─────────────────────
+      const skillsICanLearn = [];
       let scoreLearn = 0;
 
-      for (const wanted of currentUser.skillsWanted) {
-        for (const offered of otherUser.skillsOffered) {
+      for (const wanted of myWanted) {
+        if (!wanted || !wanted.skill) continue; // skip malformed entries
+        for (const offered of theirOffered) {
+          if (!offered || !offered.skill) continue;
           if (
             wanted.skill.trim().toLowerCase() ===
             offered.skill.trim().toLowerCase()
           ) {
             const locMatch = locationsCompatible(wanted, offered);
+            if (!locMatch) continue; // incompatible mode / location
             skillsICanLearn.push({
               skill: offered.skill,
-              mode: offered.mode,
+              mode: offered.mode || "Online",
               location: offered.location || "",
-              locationMatch: locMatch,
+              locationMatch: true,
             });
-            scoreLearn += locMatch ? 80 : 40;
-            break; // one match per wanted skill is enough
+            scoreLearn += 2;
           }
         }
       }
 
-      // ── Skills I can TEACH the other user ──────────────────────────────
-      // currentUser.skillsOffered  vs  otherUser.skillsWanted
-      const skillsICanTeach = []; // { skill, mode, location, locationMatch }
+      // ── Skills I can teach them ──────────────────────────
+      const skillsICanTeach = [];
       let scoreTeach = 0;
 
-      for (const offered of currentUser.skillsOffered) {
-        for (const wanted of otherUser.skillsWanted) {
+      for (const offered of myOffered) {
+        if (!offered || !offered.skill) continue;
+        for (const wanted of theirWanted) {
+          if (!wanted || !wanted.skill) continue;
           if (
             offered.skill.trim().toLowerCase() ===
             wanted.skill.trim().toLowerCase()
           ) {
             const locMatch = locationsCompatible(offered, wanted);
+            if (!locMatch) continue;
             skillsICanTeach.push({
               skill: offered.skill,
-              mode: offered.mode,
+              mode: offered.mode || "Online",
               location: offered.location || "",
-              locationMatch: locMatch,
+              locationMatch: true,
             });
-            scoreTeach += locMatch ? 80 : 40;
-            break;
+            scoreTeach += 2;
           }
         }
       }
 
-      const totalScore = scoreLearn + scoreTeach;
-      const matchPercent = Math.min(totalScore, 100);
+      // ── Match percentage ─────────────────────────────────
+      const totalMatched = skillsICanLearn.length + skillsICanTeach.length;
+      const totalPossible = myWanted.length + myOffered.length;
+
+      const matchPercent =
+        totalPossible > 0
+          ? Math.min(Math.round((totalMatched / totalPossible) * 100), 100)
+          : 0;
+
+      // Small bonus if there are any location-compatible matches
+      const locationBonus = scoreLearn + scoreTeach - totalMatched > 0 ? 5 : 0;
+      const finalPercent = Math.min(matchPercent + locationBonus, 100);
 
       return {
         user: {
           _id: otherUser._id,
           name: otherUser.name,
           email: otherUser.email,
-          bio: otherUser.bio,
-          location: otherUser.location,
-          skillsOffered: otherUser.skillsOffered,
-          skillsWanted: otherUser.skillsWanted,
+          bio: otherUser.bio || "",
+          location: otherUser.location || "",
+          skillsOffered: theirOffered,
+          skillsWanted: theirWanted,
         },
-        matchPercent,
+        matchPercent: finalPercent,
         skillsICanTeach,
         skillsICanLearn,
       };
     });
 
-    // Only users where at least one skill matches (regardless of location)
+    // Only return users who share at least one skill with the current user
     const sorted = matches
-      .filter((m) => m.matchPercent > 0)
+      .filter(
+        (m) => m.skillsICanLearn.length > 0 || m.skillsICanTeach.length > 0,
+      )
       .sort((a, b) => b.matchPercent - a.matchPercent);
 
     res.json(sorted);
   } catch (err) {
+    console.error("Match route error:", err);
     res.status(500).json({ message: err.message });
   }
 });

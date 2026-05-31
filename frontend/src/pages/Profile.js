@@ -227,8 +227,14 @@ function Profile() {
 
   const saveProfile = async () => {
     setSaving(true);
+    setMessage("");
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setMessage("❌ Not logged in. Please log in again.");
+        setSaving(false);
+        return;
+      }
       const res = await axios.put(
         "http://localhost:5000/api/users/profile",
         { name, bio, location, skillsOffered, skillsWanted },
@@ -239,10 +245,13 @@ function Profile() {
       setUser(updated);
       setMessage("✅ Profile saved!");
       setTimeout(() => setMessage(""), 3000);
-    } catch {
-      setMessage("❌ Save failed");
+    } catch (err) {
+      console.error("Save profile error:", err);
+      const serverMsg = err?.response?.data?.message;
+      setMessage(`❌ ${serverMsg || "Save failed. Please try again."}`);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const cardStyle = {

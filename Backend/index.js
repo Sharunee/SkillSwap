@@ -27,9 +27,9 @@ app.use(cors());
 app.use(express.json());
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.log(err));
+  .catch((err) => console.log("❌ MongoDB connection failed:", err.message));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

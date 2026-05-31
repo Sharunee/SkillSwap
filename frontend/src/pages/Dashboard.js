@@ -37,7 +37,8 @@ function Dashboard() {
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
-    if (!stored) {
+    const token = localStorage.getItem("token");
+    if (!stored || !token) {
       window.location.href = "/login";
       return;
     }
